@@ -64,8 +64,8 @@ A vantagem de usar SQLite é que você não precisa instalar um servidor de banc
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git](https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git)
-    cd NOME_DO_REPOSITORIO
+    git clone [https://github.com/eduardoferreira97/GerenciamentoDeLivros_LPF.git](https://github.com/eduardoferreira97/GerenciamentoDeLivros_LPF)
+    cd GerenciamentoDeLivros_LPF
     ```
 
 2.  **Instale as dependências:**
