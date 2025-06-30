@@ -28,16 +28,19 @@ public class UsuarioService {
     }
 
     public void cadastrarUsuario(Usuario usuario) {
-        if (usuario.getNome() == null || usuario.getNome().isBlank() || usuario.getEmail() == null || !usuario.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Nome e Email são obrigatórios e o email deve ser válido.");
+        if (usuario.getNome() == null || usuario.getNome().isBlank() || usuario.getEmail() == null || usuario.getCPF() == null || usuario.getCPF().isBlank() || usuario.getCPF().length() < 11 || usuario.getCPF().length() > 11  || !usuario.getEmail().contains("@")) {
+            throw new IllegalArgumentException("Nome, Email e CPF são obrigatórios e o email deve ser válido.");
         }
         if (this.usuarioRepository.buscarPorEmail(usuario.getEmail()).isPresent()) {
             throw new IllegalStateException("O email '" + usuario.getEmail() + "' já está em uso.");
         }
-
+        if (this.usuarioRepository.buscarPorCPF(usuario.getCPF()).isPresent()) {
+            throw new IllegalStateException("O CPF '" + usuario.getCPF() + "' já está em uso.");
+        }
+        
         if (usuario instanceof Aluno) {
             final String matriculaUnica = gerarMatriculaUnica();
-            final Aluno alunoComMatricula = new Aluno(0, usuario.getNome(), usuario.getEmail(), matriculaUnica);
+            final Aluno alunoComMatricula = new Aluno(0, usuario.getNome(), usuario.getEmail(), usuario.getCPF(), matriculaUnica);
             this.usuarioRepository.salvarUsuario(alunoComMatricula);
             System.out.println("-> Aluno cadastrado com matrícula gerada: " + matriculaUnica);
         } else {

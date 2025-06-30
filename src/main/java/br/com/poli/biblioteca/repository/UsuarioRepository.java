@@ -20,11 +20,12 @@ public class UsuarioRepository {
         int id = rs.getInt("id");
         String nome = rs.getString("nome");
         String email = rs.getString("email");
-
+        String cpf = rs.getString("cpf");
+        
         if ("Aluno".equals(tipo)) {
-            return new Aluno(id, nome, email, rs.getString("matricula"));
+            return new Aluno(id, nome, email, cpf, rs.getString("matricula"));
         } else {
-            return new Funcionario(id, nome, email, rs.getString("cargo"));
+            return new Funcionario(id, nome, email, cpf, rs.getString("cargo"));
         }
     }
 
@@ -47,6 +48,20 @@ public class UsuarioRepository {
         String sql = "SELECT * FROM usuarios WHERE id = ?";
         try (Connection conn = this.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(criarUsuario(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+        }
+        return Optional.empty();
+    }
+    
+    public Optional<Usuario> buscarPorCPF(String cpf) {
+        String sql = "SELECT * FROM usuarios WHERE cpf = ?";
+        try (Connection conn = this.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, cpf);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 return Optional.of(criarUsuario(rs));
@@ -86,7 +101,7 @@ public class UsuarioRepository {
     }
 
     public List<Usuario> buscarPorTermo(String termo, String tipoUsuario) {
-        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM usuarios WHERE (nome LIKE ? OR email LIKE ? OR matricula LIKE ?)");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM usuarios WHERE (nome LIKE ? OR email LIKE ? OR matricula LIKE ? OR cpf LIKE ?)");
         if (tipoUsuario != null && !tipoUsuario.isBlank()) {
             sqlBuilder.append(" AND tipo = ?");
         }
@@ -110,17 +125,19 @@ public class UsuarioRepository {
     }
 
     public void salvarUsuario(Usuario usuario) {
-        String sql = "INSERT INTO usuarios(nome, email, tipo, matricula, cargo) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO usuarios(nome, email, tipo, cpf, matricula, cargo) VALUES(?,?,?,?,?,?)";
         try (Connection conn = this.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, usuario.getNome());
             pstmt.setString(2, usuario.getEmail());
             pstmt.setString(3, usuario.getTipo());
+            pstmt.setString(4, usuario.getCPF());
+
             if (usuario instanceof Aluno) {
-                pstmt.setString(4, ((Aluno) usuario).getMatricula());
-                pstmt.setNull(5, Types.VARCHAR);
+                pstmt.setString(5, ((Aluno) usuario).getMatricula());
+                pstmt.setNull(6, Types.VARCHAR);                     
             } else if (usuario instanceof Funcionario) {
-                pstmt.setNull(4, Types.VARCHAR);
-                pstmt.setString(5, ((Funcionario) usuario).getCargo());
+                pstmt.setNull(5, Types.VARCHAR);                      
+                pstmt.setString(6, ((Funcionario) usuario).getCargo());
             }
             pstmt.executeUpdate();
         } catch (SQLException e) {

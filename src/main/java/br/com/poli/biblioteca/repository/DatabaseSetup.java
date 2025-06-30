@@ -24,6 +24,7 @@ public class DatabaseSetup {
                 + " id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + " nome TEXT NOT NULL,"
                 + " email TEXT NOT NULL UNIQUE,"
+                + " cpf TEXT NOT NULL UNIQUE,"
                 + " tipo TEXT NOT NULL CHECK(tipo IN ('Aluno', 'Funcionario')),"
                 + " matricula TEXT UNIQUE," // Apenas para Alunos
                 + " cargo TEXT"      // Apenas para Funcionários
