@@ -24,24 +24,53 @@ public class Main {
     static {
         DatabaseSetup.criarTabelas();
         UsuarioRepository usuarioRepository = new UsuarioRepository();
+        criarUsuariosPadraoSeNaoExistirem(usuarioRepository);
         LivroRepository livroRepository = new LivroRepository();
-        
-        livroService = new LivroService(livroRepository); 
+        livroService = new LivroService(livroRepository);
         usuarioService = new UsuarioService(usuarioRepository);
         loginService = new LoginService(usuarioRepository);
     }
 
+    private static void criarUsuariosPadraoSeNaoExistirem(UsuarioRepository repo) {
+        final String adminEmail = "Admin@";
+        if (repo.buscarPorEmail(adminEmail).isEmpty()) {
+            System.out.println("Usuário mestre 'Admin' não encontrado. Criando...");
+            Funcionario admin = new Funcionario(
+                    0,
+                    "Administrador",
+                    adminEmail,
+                    "Admin",
+                    "Administrador do Sistema"
+            );
+            repo.salvarUsuario(admin);
+            System.out.println("-> Usuário mestre 'Admin' criado com sucesso!");
+        }
+
+        final String alunoEmail = "batman@poli.br";
+        if (repo.buscarPorEmail(alunoEmail).isEmpty()) {
+            System.out.println("Usuário mestre 'Aluno' não encontrado. Criando...");
+            Aluno aluno = new Aluno(
+                    0,
+                    "Evandson",
+                    alunoEmail,
+                    "12345678910",
+                    "202511223"
+            );
+            repo.salvarUsuario(aluno);
+            System.out.println("-> Usuário mestre 'Aluno' criado com sucesso!");
+        }
+    }
+
     public static void main(String[] args) {
         System.out.println("--- BEM-VINDO AO SISTEMA DA BIBLIOTECA ---");
-
         Optional<Usuario> usuarioLogadoOpt = autenticarUsuario();
 
         usuarioLogadoOpt.ifPresentOrElse(
-            usuario -> {
-                System.out.println("\nLogin bem-sucedido! Bem-vindo(a), " + usuario.getNome() + ".");
-                iniciarSessaoPrincipal(usuario);
-            },
-            () -> System.out.println("\nFalha na autenticação. O sistema será encerrado.")
+                usuario -> {
+                    System.out.println("\nLogin bem-sucedido! Bem-vindo(a), " + usuario.getNome() + ".");
+                    iniciarSessaoPrincipal(usuario);
+                },
+                () -> System.out.println("\nFalha na autenticação. O sistema será encerrado.")
         );
 
         System.out.println("\nSistema finalizado.");
@@ -49,32 +78,53 @@ public class Main {
     }
 
     private static Optional<Usuario> autenticarUsuario() {
-        System.out.print("Login (email): ");
+        System.out.print("Login: ");
         String login = scanner.nextLine();
         System.out.print("Senha (seu CPF): ");
         String senha = scanner.nextLine();
-
         return loginService.autenticar(login, senha);
     }
 
     private static void iniciarSessaoPrincipal(Usuario usuarioLogado) {
         boolean rodando = true;
+        final boolean isFuncionario = usuarioLogado instanceof Funcionario;
+
         while (rodando) {
             exibirMenu(usuarioLogado);
             int opcao = lerOpcao();
 
             switch (opcao) {
-                case 1 -> listarTodosLivros();
-                case 2 -> buscarLivroInterativo();
-                case 3 -> adicionarOuAtualizarLivro();
-
-                case 5 -> listarTodosUsuarios();
-                case 6 -> cadastrarNovoUsuario();
-                case 7 -> buscarUsuarioInterativo();
-                case 8 -> removerUsuario();
-
-                case 0 -> rodando = false;
-                default -> System.out.println("Opção inválida. Tente novamente.");
+                case 1:
+                    listarTodosLivros();
+                    break;
+                case 2:
+                    buscarLivroInterativo();
+                    break;
+                case 3:
+                    if (isFuncionario) adicionarOuAtualizarLivro();
+                    else System.out.println("Opção inválida. Tente novamente.");
+                    break;
+                case 5:
+                    if (isFuncionario) listarTodosUsuarios();
+                    else System.out.println("Opção inválida. Tente novamente.");
+                    break;
+                case 6:
+                    if (isFuncionario) cadastrarNovoUsuario();
+                    else System.out.println("Opção inválida. Tente novamente.");
+                    break;
+                case 7:
+                    if (isFuncionario) buscarUsuarioInterativo();
+                    else System.out.println("Opção inválida. Tente novamente.");
+                    break;
+                case 8:
+                    if (isFuncionario) removerUsuario();
+                    else System.out.println("Opção inválida. Tente novamente.");
+                    break;
+                case 0:
+                    rodando = false;
+                    break;
+                default:
+                    System.out.println("Opção inválida. Tente novamente.");
             }
         }
     }
@@ -82,15 +132,24 @@ public class Main {
     private static void exibirMenu(Usuario usuarioLogado) {
         System.out.println("\n--- SISTEMA DE BIBLIOTECA ---");
         System.out.println("Usuário Logado: " + usuarioLogado.getNome() + " | Tipo: " + usuarioLogado.getTipo());
-        System.out.println("--- Livros ---");
-        System.out.println("1. Listar todos os livros");
-        System.out.println("2. Busca dinâmica de livros");
-        System.out.println("3. Adicionar/Atualizar estoque de livro");
-        System.out.println("--- Usuários ---");
-        System.out.println("5. Listar todos os usuários");
-        System.out.println("6. Cadastrar novo usuário");
-        System.out.println("7. Busca dinâmica de usuários");
-        System.out.println("8. Remover um usuário");
+
+        if (usuarioLogado instanceof Funcionario) {
+            System.out.println("--- Livros ---");
+            System.out.println("1. Listar todos os livros");
+            System.out.println("2. Busca dinâmica de livros");
+            System.out.println("3. Adicionar/Atualizar estoque de livro");
+            System.out.println("--- Usuários ---");
+            System.out.println("5. Listar todos os usuários");
+            System.out.println("6. Cadastrar novo usuário");
+            System.out.println("7. Busca dinâmica de usuários");
+            System.out.println("8. Remover um usuário");
+        }
+        else if (usuarioLogado instanceof Aluno) {
+            System.out.println("--- Livros ---");
+            System.out.println("1. Listar todos os livros");
+            System.out.println("2. Busca dinâmica de livros");
+        }
+
         System.out.println("--------------------");
         System.out.println("0. Sair");
         System.out.print("Escolha uma opção: ");
@@ -176,12 +235,12 @@ public class Main {
             } else {
                 System.out.println("Tipo inválido."); return;
             }
-            usuarioService.cadastrarUsuario(novoUsuario); //
+            usuarioService.cadastrarUsuario(novoUsuario);
         } catch (Exception e) {
             System.err.println("Erro ao cadastrar usuário: " + e.getMessage());
         }
     }
-    
+
     private static void buscarUsuarioInterativo() {
         System.out.println("\n--- Busca Dinâmica de Usuários ---");
         System.out.print("Filtrar por tipo? (1=Aluno, 2=Funcionário, Enter=Todos): ");
