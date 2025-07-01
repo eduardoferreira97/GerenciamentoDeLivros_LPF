@@ -22,46 +22,26 @@ public class Main {
     private static final LoginService loginService;
 
     static {
-        DatabaseSetup.criarTabelas(); //
-
+        DatabaseSetup.criarTabelas();
         UsuarioRepository usuarioRepository = new UsuarioRepository();
-
         LivroRepository livroRepository = new LivroRepository();
-        livroService = new LivroService(livroRepository);
+        
+        livroService = new LivroService(livroRepository); 
         usuarioService = new UsuarioService(usuarioRepository);
         loginService = new LoginService(usuarioRepository);
     }
 
-    private static void criarUsuarioMestreSeNaoExistir(UsuarioRepository repo) {
-        final String adminEmail = "Admin@";
-
-        Optional<Usuario> adminOpt = repo.buscarPorEmail(adminEmail); //
-
-        if (adminOpt.isEmpty()) {
-            System.out.println("Usuário mestre não encontrado. Criando...");
-            Funcionario admin = new Funcionario(
-                    0,
-                    "Administrador",
-                    adminEmail,
-                    "Admin",
-                    "Administrador do Sistema"
-            );
-
-            repo.salvarUsuario(admin);
-            System.out.println("-> Usuário mestre criado com sucesso!");
-        }
-    }
-
     public static void main(String[] args) {
         System.out.println("--- BEM-VINDO AO SISTEMA DA BIBLIOTECA ---");
+
         Optional<Usuario> usuarioLogadoOpt = autenticarUsuario();
 
         usuarioLogadoOpt.ifPresentOrElse(
-                usuario -> {
-                    System.out.println("\nLogin bem-sucedido! Bem-vindo(a), " + usuario.getNome() + ".");
-                    iniciarSessaoPrincipal(usuario);
-                },
-                () -> System.out.println("\nFalha na autenticação. O sistema será encerrado.")
+            usuario -> {
+                System.out.println("\nLogin bem-sucedido! Bem-vindo(a), " + usuario.getNome() + ".");
+                iniciarSessaoPrincipal(usuario);
+            },
+            () -> System.out.println("\nFalha na autenticação. O sistema será encerrado.")
         );
 
         System.out.println("\nSistema finalizado.");
@@ -69,13 +49,14 @@ public class Main {
     }
 
     private static Optional<Usuario> autenticarUsuario() {
-        System.out.print("Login (email ou CPF): ");
+        System.out.print("Login (email): ");
         String login = scanner.nextLine();
         System.out.print("Senha (seu CPF): ");
         String senha = scanner.nextLine();
 
         return loginService.autenticar(login, senha);
     }
+
     private static void iniciarSessaoPrincipal(Usuario usuarioLogado) {
         boolean rodando = true;
         while (rodando) {
@@ -97,6 +78,7 @@ public class Main {
             }
         }
     }
+
     private static void exibirMenu(Usuario usuarioLogado) {
         System.out.println("\n--- SISTEMA DE BIBLIOTECA ---");
         System.out.println("Usuário Logado: " + usuarioLogado.getNome() + " | Tipo: " + usuarioLogado.getTipo());
@@ -113,6 +95,7 @@ public class Main {
         System.out.println("0. Sair");
         System.out.print("Escolha uma opção: ");
     }
+
     private static int lerOpcao() {
         try {
             return Integer.parseInt(scanner.nextLine());
@@ -120,15 +103,17 @@ public class Main {
             return -1;
         }
     }
+
     private static void listarTodosLivros() {
         System.out.println("\n--- Lista de Todos os Livros ---");
-        List<Livro> livros = livroService.listarTodosLivros(); //
+        List<Livro> livros = livroService.listarTodosLivros();
         if (livros.isEmpty()) {
             System.out.println("Nenhum livro cadastrado.");
         } else {
-            livros.forEach(livro -> System.out.println("  - " + livro.getTitulo() + " (ISBN: " + livro.getIsbn() + ")")); //
+            livros.forEach(livro -> System.out.println("  - " + livro.getTitulo() + " (ISBN: " + livro.getIsbn() + ")"));
         }
     }
+
     private static void buscarLivroInterativo() {
         System.out.println("\n--- Busca Dinâmica de Livros ---");
         System.out.println("Digite parte do ISBN, título ou autor. Deixe em branco para voltar.");
@@ -136,13 +121,14 @@ public class Main {
         String termo = scanner.nextLine();
         if (termo.isBlank()) return;
 
-        List<Livro> livrosEncontrados = livroService.buscarLivrosDinamicamente(termo); //
+        List<Livro> livrosEncontrados = livroService.buscarLivrosDinamicamente(termo);
         if (livrosEncontrados.isEmpty()) {
             System.out.println("Nenhum livro encontrado para o termo '" + termo + "'.");
         } else {
             livrosEncontrados.forEach(livro -> System.out.println("  - Título: " + livro.getTitulo() + " | Autor: " + livro.getAutor() + " | ISBN: " + livro.getIsbn()));
         }
     }
+
     private static void adicionarOuAtualizarLivro() {
         System.out.println("\n--- Adicionar/Atualizar Livro no Catálogo ---");
         try {
@@ -151,25 +137,27 @@ public class Main {
             System.out.print("Ano de Publicação: "); int ano = Integer.parseInt(scanner.nextLine());
             System.out.print("Quantidade de cópias a adicionar: "); int qtd = Integer.parseInt(scanner.nextLine());
             Livro livroInfo = new Livro(null, titulo, autor, ano, qtd, qtd);
-            livroService.cadastrarOuAdicionarEstoque(livroInfo); //
+            livroService.cadastrarOuAdicionarEstoque(livroInfo);
         } catch (Exception e) {
             System.err.println("Erro na operação: " + e.getMessage());
         }
     }
+
     private static void listarTodosUsuarios() {
         System.out.println("\n--- Lista de Todos os Usuários ---");
-        List<Usuario> usuarios = usuarioService.listarTodosUsuarios(); //
+        List<Usuario> usuarios = usuarioService.listarTodosUsuarios();
         if (usuarios.isEmpty()) {
             System.out.println("Nenhum usuário cadastrado.");
         } else {
             usuarios.forEach(usuario -> {
-                System.out.print("  - ID: " + usuario.getId() + " | [" + usuario.getTipo() + "] " + usuario.getNome() + " (" + usuario.getEmail() + ")"); //
-                if (usuario instanceof Aluno) System.out.print(" | Matrícula: " + ((Aluno) usuario).getMatricula()); //
-                if (usuario instanceof Funcionario) System.out.print(" | Cargo: " + ((Funcionario) usuario).getCargo()); //
+                System.out.print("  - ID: " + usuario.getId() + " | [" + usuario.getTipo() + "] " + usuario.getNome() + " (" + usuario.getEmail() + ")");
+                if (usuario instanceof Aluno) System.out.print(" | Matrícula: " + ((Aluno) usuario).getMatricula());
+                if (usuario instanceof Funcionario) System.out.print(" | Cargo: " + ((Funcionario) usuario).getCargo());
                 System.out.println();
             });
         }
     }
+
     private static void cadastrarNovoUsuario() {
         System.out.println("\n--- Cadastrar Novo Usuário ---");
         try {
@@ -193,6 +181,7 @@ public class Main {
             System.err.println("Erro ao cadastrar usuário: " + e.getMessage());
         }
     }
+    
     private static void buscarUsuarioInterativo() {
         System.out.println("\n--- Busca Dinâmica de Usuários ---");
         System.out.print("Filtrar por tipo? (1=Aluno, 2=Funcionário, Enter=Todos): ");
@@ -206,7 +195,7 @@ public class Main {
         String termo = scanner.nextLine();
         if (termo.isBlank()) return;
 
-        List<Usuario> usuariosEncontrados = usuarioService.buscarUsuariosDinamicamente(termo, tipoFiltro); //
+        List<Usuario> usuariosEncontrados = usuarioService.buscarUsuariosDinamicamente(termo, tipoFiltro);
         if (usuariosEncontrados.isEmpty()) {
             System.out.println("Nenhum usuário encontrado.");
         } else {
@@ -219,6 +208,7 @@ public class Main {
             });
         }
     }
+
     private static void removerUsuario() {
         System.out.println("\n--- Remover Usuário ---");
         try {
