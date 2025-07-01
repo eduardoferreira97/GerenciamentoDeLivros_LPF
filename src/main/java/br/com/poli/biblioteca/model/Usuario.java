@@ -6,7 +6,7 @@ public abstract class Usuario {
     private final String email;
     private final String cpf;
 
-    public Usuario(int id, String nome, String email, String cpf){
+    public Usuario(int id, String nome, String email, String cpf) {
         this.id = id;
         this.nome = nome;
         this.email = email;
@@ -26,8 +26,8 @@ public abstract class Usuario {
     }
 
     public String getCPF() {
-    	return cpf;
+        return cpf;
     }
-    
+
     public abstract String getTipo();
 }
