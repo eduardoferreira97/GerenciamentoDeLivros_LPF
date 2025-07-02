@@ -23,7 +23,7 @@ public class UsuarioRepository {
         String cpf = rs.getString("cpf");
         
         if ("Aluno".equals(tipo)) {
-            return new Aluno(id, nome, email, cpf, rs.getString("matricula"));
+            return new Aluno(id, nome, email, rs.getString("matricula"), cpf);
         } else {
             return new Funcionario(id, nome, email, cpf, rs.getString("cargo"));
         }
@@ -146,13 +146,13 @@ public class UsuarioRepository {
         }
     }
 
-    public void removerPorId(int id) {
-        String sql = "DELETE FROM usuarios WHERE id = ?";
+    public void removerPorCPF(String cpf) {
+        String sql = "DELETE FROM usuarios WHERE cpf = ?";
         try (Connection conn = this.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
+            pstmt.setString(1, cpf);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println(e.getMessage());
+            System.err.println("Erro ao remover usuário por CPF: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }

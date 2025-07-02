@@ -2,12 +2,14 @@ package br.com.poli.biblioteca.service;
 
 import br.com.poli.biblioteca.model.Emprestimo;
 import br.com.poli.biblioteca.model.Livro;
+import br.com.poli.biblioteca.model.Usuario;
 import br.com.poli.biblioteca.model.StatusEmprestimo;
 import br.com.poli.biblioteca.repository.EmprestimoRepository;
 import br.com.poli.biblioteca.repository.LivroRepository;
 import br.com.poli.biblioteca.repository.UsuarioRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.ArrayList;
 
 public class EmprestimoService {
     private final EmprestimoRepository emprestimoRepository;
@@ -50,35 +52,49 @@ public class EmprestimoService {
         }
     }
 
-    public void realizarEmprestimo(int usuarioId, String livroIsbn) {
-        validarUsuario(usuarioId);
-        final Livro livro = validarLivroDisponivel(livroIsbn);
-        validarRegrasDeEmprestimo(usuarioId, livroIsbn);
+    public void realizarEmprestimo(String cpfUsuario, String livroIsbn) {
+        // 1. Busca e valida o usuário pelo CPF
+        Usuario usuario = usuarioRepository.buscarPorCPF(cpfUsuario)
+                .orElseThrow(() -> new IllegalStateException("Usuário com CPF " + cpfUsuario + " não existe."));
 
+        // 2. Valida o livro e as regras de empréstimo (reutilizando a lógica existente)
+        final Livro livro = validarLivroDisponivel(livroIsbn);
+        validarRegrasDeEmprestimo(usuario.getId(), livroIsbn);
+
+        // 3. Procede com o empréstimo
         final LocalDate hoje = LocalDate.now();
-        final Emprestimo novoEmprestimo = new Emprestimo(0, livroIsbn, usuarioId, hoje, hoje.plusWeeks(1), null, StatusEmprestimo.ATIVO);
+        final Emprestimo novoEmprestimo = new Emprestimo(0, livroIsbn, usuario.getId(), hoje, hoje.plusWeeks(1), null, StatusEmprestimo.ATIVO);
 
         emprestimoRepository.salvar(novoEmprestimo);
         livroRepository.atualizarEstoque(livroIsbn, livro.getQuantidadeTotal(), livro.getQuantidadeDisponivel() - 1);
 
-        System.out.println("-> Empréstimo realizado com sucesso!");
+        System.out.println("-> Empréstimo realizado com sucesso para o usuário '" + usuario.getNome() + "'!");
     }
 
-    public void devolverEmprestimo(int emprestimoId) {
-        final Emprestimo emprestimo = emprestimoRepository.buscarPorId(emprestimoId)
-                .orElseThrow(() -> new IllegalStateException("Empréstimo com ID " + emprestimoId + " não encontrado."));
-        if (emprestimo.getStatus() == StatusEmprestimo.DEVOLVIDO) {
-            throw new IllegalStateException("Este livro já foi devolvido.");
-        }
-        final Livro livro = livroRepository.buscaPorISBN(emprestimo.getLivroIsbn()).get();
+    public void devolverEmprestimo(String cpfUsuario, String livroIsbn) {
+        // 1. Busca e valida o usuário pelo CPF
+        Usuario usuario = usuarioRepository.buscarPorCPF(cpfUsuario)
+                .orElseThrow(() -> new IllegalStateException("Usuário com CPF " + cpfUsuario + " não existe."));
+
+        // 2. Busca o empréstimo específico que está ativo para este usuário e livro
+        Emprestimo emprestimo = emprestimoRepository.buscarAtivoPorUsuarioIdELivroIsbn(usuario.getId(), livroIsbn)
+                .orElseThrow(() -> new IllegalStateException("Não foi encontrado um empréstimo ativo para o livro com ISBN " + livroIsbn + " para este usuário."));
+
+        // 3. Procede com a devolução
+        final Livro livro = livroRepository.buscaPorISBN(emprestimo.getLivroIsbn()).get(); // Sabemos que o livro existe
         final Emprestimo emprestimoDevolvido = emprestimo.comStatus(StatusEmprestimo.DEVOLVIDO, LocalDate.now());
+
         emprestimoRepository.atualizar(emprestimoDevolvido);
         livroRepository.atualizarEstoque(livro.getIsbn(), livro.getQuantidadeTotal(), livro.getQuantidadeDisponivel() + 1);
-        System.out.println("-> Devolução registrada com sucesso!");
+
+        System.out.println("-> Devolução do livro '" + livro.getTitulo() + "' registrada com sucesso!");
     }
 
-    public List<Emprestimo> listarHistoricoPorUsuario(int usuarioId) {
-        return emprestimoRepository.buscarTodosPorUsuarioId(usuarioId);
+    public List<Emprestimo> listarHistoricoPorUsuario(String cpf) {
+        // Busca o usuário pelo CPF para depois buscar o histórico pelo ID
+        return usuarioRepository.buscarPorCPF(cpf)
+                .map(usuario -> emprestimoRepository.buscarTodosPorUsuarioId(usuario.getId()))
+                .orElse(new ArrayList<>()); // Retorna lista vazia se o usuário não for encontrado
     }
 
     public List<Emprestimo> listarEmprestimosAtrasados() {

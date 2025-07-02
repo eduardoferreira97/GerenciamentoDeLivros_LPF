@@ -101,4 +101,19 @@ public class EmprestimoRepository {
         }
         return emprestimos;
     }
+
+    public Optional<Emprestimo> buscarAtivoPorUsuarioIdELivroIsbn(int usuarioId, String livroIsbn) {
+        String sql = "SELECT * FROM emprestimos WHERE usuario_id = ? AND livro_isbn = ? AND status = 'ATIVO'";
+        try (Connection conn = this.conectar(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, usuarioId);
+            pstmt.setString(2, livroIsbn);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(criarEmprestimoDoResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar empréstimo ativo por usuário e livro: " + e.getMessage());
+        }
+        return Optional.empty();
+    }
 }
